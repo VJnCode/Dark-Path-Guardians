@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import ValidationError
 
+from . import llm
 from .classifier import classify, drop_containers, risk_score
 from .config import settings
 from .sandbox import SandboxBusy, SandboxError, SandboxUnavailable, Session, manager
@@ -39,8 +40,10 @@ async def _reaper() -> None:
 @contextlib.asynccontextmanager
 async def lifespan(_app: FastAPI):
     task = asyncio.create_task(_reaper())  # also removes leftovers from a previous run on startup
+    warm = asyncio.create_task(asyncio.to_thread(llm.warm_up))
     yield
     task.cancel()
+    warm.cancel()
 
 
 app = FastAPI(title="Dark-Path-Guardians", version="2.0.0", lifespan=lifespan)

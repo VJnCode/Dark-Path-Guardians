@@ -135,6 +135,17 @@ def _call(items: list[dict]) -> list[LLMLabel]:
     return labels
 
 
+def warm_up() -> None:
+    """Load the model once at startup so the user's first scan doesn't pay the cold-start cost."""
+    if not settings.llm_enabled:
+        return
+    try:
+        _call([{"id": 0, "kind": "text", "text": "Add to cart"}])
+        log.info("LLM %s is warm", settings.llm_model)
+    except LLMError as e:
+        log.info("LLM warm-up skipped: %s", e)
+
+
 def classify(elements: list[PageElement]) -> dict[int, Optional[LLMLabel]]:
     """Label elements by their index in `elements`. Missing index = no answer.
 

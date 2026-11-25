@@ -1,0 +1,6 @@
+# Files copied into Linux containers must keep LF line endings on Windows checkouts.
+sandbox/** text eol=lf
+backend/** text eol=lf
+extension/** text eol=lf
+*.sh text eol=lf
+*.png binary
