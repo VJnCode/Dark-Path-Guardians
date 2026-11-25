@@ -18,7 +18,8 @@ AMBIGUOUS = 0.45
 
 def normalize(text: str) -> str:
     text = text.replace("’", "'").replace("‘", "'").replace(" ", " ")
-    return re.sub(r"\s+", " ", text).strip().lower()
+    text = re.sub(r"\s+", " ", text).strip().lower()
+    return re.sub(r"\b(don|can|won|isn|didn|doesn)t\b", r"\1't", text)  # "dont" -> "don't"
 
 
 def _any(patterns: Iterable[str], text: str) -> Optional[re.Match]:
@@ -36,26 +37,37 @@ def _finding(pt: PatternType, conf: float, el: PageElement, why: str) -> Finding
 
 # ---------------------------------------------------------------- urgency
 
+CLOCK = r"\d{1,2} ?: ?\d{2}( ?: ?\d{2})?"
+TIME_UNIT = r"(days?|hrs?|hours?|mins?|minutes?|secs?|seconds?)"
+
+# A deadline: something ends at a stated time.
 URGENCY_STRONG = [
     r"\b(offer|sale|deal|discount|price|promo(tion)?|coupon)s? (ends|expires|ending)\b",
-    r"\b(ends?|expires?|ending) in:? ?\d",
+    r"\b(ends?|expires?|ending) in\b",
     r"\b(only|just) \d+ ?(hours?|hrs?|minutes?|mins?) (left|remaining)\b",
     r"\b(today|tonight) only\b",
     r"\bonly today\b",
-    r"\blast chance\b",
-    r"\bhurry\b",
-    r"\bact (now|fast)\b",
     r"\b(ends|ending) (tonight|today|soon|at midnight)\b",
-    r"\b(reserved|held) for (you for )?(the next )?\d+ ?(minutes?|mins?)\b",
+    r"\b(reserved|held|prioriti[sz]ed|guaranteed)( in your (cart|basket|bag))? for\b",  # "reserved for 09:57"
+    r"\b(order|purchase|checkout|activate|complete|buy|claim)\b.{0,40}\bwithin\b",
+    rf"\btime (remaining|left)\b|\b{CLOCK} ?(left|remaining)\b",
+    rf"\b\d+ ?{TIME_UNIT}\b.{{0,4}}\d+ ?{TIME_UNIT}\b",           # "0 days 22 hours 13 minutes"
+    rf"\b{TIME_UNIT}\W+{TIME_UNIT}\W+{TIME_UNIT}\b",               # countdown widget labels
+    r"\b\d{1,2}:\d{2}:\d{2}:\d{2}\b",                              # dd:hh:mm:ss
+    r"\d ?days? ?\d|days? ?\d+ ?hours?|hours? ?\d+ ?min",           # glued: "00days17hours12mins"
+    r"\bprice guaranteed for\b",
 ]
 URGENCY_WEAK = [
+    r"^\W*(\w+ )?\d{1,2}:\d{2}:\d{2}\W*$",   # a bare running clock, e.g. "flash 19:15:22"
     r"\blimited[- ]time\b",
-    r"\bdon't miss( out)?\b",
     r"\bwhile (supplies|stocks?) lasts?\b",
     r"\bflash sale\b",
     r"\bnow or never\b",
     r"\btime is running out\b",
 ]
+# Pressure words with no deadline. On their own they suggest urgency; next to a stock claim
+# ("Hurry! Only 2 left") they are part of the scarcity message instead.
+URGENCY_PRESSURE = [r"\bhurry\b", r"\blast chance\b", r"\bact (now|fast)\b", r"\bdon't miss( out)?\b"]
 URGENCY_CONTEXT = r"\b(sale|offer|deal|discount|ends?|left|expires?|reserved|held|hurry|order (within|in)|delivery)\b"
 
 
@@ -75,25 +87,35 @@ def check_urgency(el: PageElement) -> list[Finding]:
     if m:
         return [_finding(PatternType.FAKE_URGENCY, WEAK, el,
                          f"Possible artificial urgency ('{m.group(0)}').")]
+    m = _any(URGENCY_PRESSURE, text)
+    if m and not _any(SCARCITY_STRONG + SCARCITY_WEAK, text):
+        return [_finding(PatternType.FAKE_URGENCY, 0.8, el,
+                         f"Pressure message ('{m.group(0)}') pushes you to act before you can compare.")]
     return []
 
 
 # ---------------------------------------------------------------- scarcity
 
+_UNIT = r"(item\(s\)|items?|unit\(s\)|units?|piece\(s\)|pieces?|pcs|pairs?|bottles?|products?|rooms?|seats?|tickets?|copies|spots?|stock)"
 SCARCITY_STRONG = [
-    r"\b(only|just) \d+ (left|remaining)\b",
-    r"\b(only|just) \d+ (items?|units?|pieces?|rooms?|seats?|tickets?|copies|spots?) (left|remaining)\b",
-    r"\bonly \d+ (left )?in stock\b",
+    rf"\b(only|just|less than|fewer than) (\d+|one|two|three|a few|few) ({_UNIT} )?(left|remaining|available)\b",
+    rf"\b(only|just) (\d+|one|a few|few) ({_UNIT} )?(left )?in stock\b",
+    rf"\b\d+ ({_UNIT} )?left(?! (turn|side|click|hand|of|to))\b",          # "1 left", "20 units left"
+    rf"\b(only|just) (\d+|one|a few|few) {_UNIT}\b.{{0,20}}\bleft\b",       # "only one product left"
+    rf"\b{_UNIT} (left|remaining):? \d+\b",                                 # "bottles left 3"
     r"\b\d+ (people|others|shoppers|customers|users|travell?ers|guests) (are )?"
     r"(viewing|looking at|watching|have this in their (cart|basket|bag))\b",
-    r"\b(last|final) (one|item|room|seat|ticket)s? (left|available)\b",
+    r"\b(last|final) (one|item|room|seat|ticket|pair)s? (left|available)\b",
     r"\b(almost|nearly) (gone|sold out)\b",
+    r"\b\d+% (of )?(offers? |deals? |stock )?(claimed|sold)\b",
+    r"\b(few|limited) (stocks?|items?|quantit(y|ies)|pieces?) (left|remaining|available)\b",
 ]
 SCARCITY_WEAK = [
-    r"\b(low|limited) (stock|quantity|availability|supply)\b",
-    r"\bselling fast\b",
-    r"\bgoing fast\b",
-    r"\b(in )?high demand\b",
+    r"^\W*(only:? |last )?\d+ in stock\b",   # "5 in stock": a low-stock counter; context decides
+    r"\b(low|limited) (in )?(stock|quantity|quantities|availability|supply)\b",
+    r"\b(selling|going) (out )?fast\b",
+    r"\bsell(s|ing)? (out )?fast\b",
+    r"\b(in|high) demand\b",
 ]
 
 
@@ -216,6 +238,8 @@ SHAMING = [
     r"\bstay(ing)? (uninformed|ignorant|behind|broke)\b", r"\blike (losing|wasting|paying)\b",
     r"\bhate (sav|money|deal|free)", r"\b(rather|prefer to) (pay|miss|lose|stay)\b",
     r"\b(fine|ok|okay) (with )?(missing|paying|losing)\b", r"\bunprotected\b",
+    r"\b(rather|prefer) not (to )?(sav|get|have|receive|win)", r"\b(despise|hate) (coupons?|discounts?|deals?)\b",
+    r"\bfeel(ing)? lucky\b", r"\bpass on (this|these|my|the|free|great|amazing|exclusive)\b",
 ]
 
 
@@ -238,25 +262,38 @@ def check_confirmshaming(el: PageElement) -> list[Finding]:
 
 # ---------------------------------------------------------------- forced consent
 
-COOKIE_CONTEXT = r"\b(cookies?|consent|tracking|privacy|personal data|gdpr|personali[sz]ed ads?)\b"
+# Words that mark a cookie / tracking consent UI. ("privacy" alone is too broad: every footer has it.)
+COOKIE_CONTEXT = r"\b(cookies?|consent to|your consent|tracking technolog|gdpr|personali[sz]ed ads?)"
 IMPLIED_CONSENT = (r"\bby (continuing|using|browsing|staying|scrolling)\b.{0,80}\b(agree|accept|consent)\b"
                    r"|\bcontinued use of (this|the|our) (site|website)\b.{0,60}\b(accept|agree|consent)")
+# The whole button label must be an accept phrase, so "Consent interfaces" or "Continue reading" don't count.
 ACCEPT_BTN = (r"^(accept( all)?( cookies)?|agree( and (close|continue))?|i agree|allow( all)?( cookies)?|got it"
-              r"|ok(ay)?|i understand|continue|yes,? i (agree|accept)|consent)\b")
+              r"|ok(ay)?|i understand|continue|yes,? i (agree|accept)|consent|accept (&|and) (close|continue))[.!]?$")
 REJECT_BTN = (r"\b(reject|decline|deny|refuse|disagree|opt[- ]out|necessary only|only necessary|essential only"
               r"|only essential|strictly necessary|do not (sell|accept)|continue without accepting)\b")
+
+
+COOKIE_NOTICE = r"\b(use|uses|using)\b.{0,60}\bcookies\b|\bcookies\b.{0,80}\b(accept|agree|consent)"
+# Labels that only make sense on a consent prompt, so they count even when the DOM puts
+# the buttons far from the banner text (common with consent-management platforms).
+STRICT_CONSENT_LABEL = (r"^(accept|accept all|accept all cookies|accept cookies|agree|i agree|allow all|allow cookies"
+                        r"|got it|reject|reject all|reject all cookies|decline|decline all|necessary only"
+                        r"|only necessary|essential only|only essential)[.!]?$")
 
 
 def check_forced_consent(elements: list[PageElement]) -> list[Finding]:
     findings: list[Finding] = []
     accepts, rejects = [], []
+    page_has_notice = any(el.kind in ("text", "banner") and re.search(COOKIE_NOTICE, normalize(el.text))
+                          for el in elements)
     for el in elements:
         if el.kind not in ("button", "link"):
             continue
         text = normalize(el.text)
         if not text or len(text) > 50:
             continue
-        in_consent_ui = bool(re.search(COOKIE_CONTEXT, normalize(el.near_text)))
+        in_consent_ui = bool(re.search(COOKIE_CONTEXT, normalize(el.near_text))) or (
+            page_has_notice and bool(re.search(STRICT_CONSENT_LABEL, text)))
         if not in_consent_ui:
             continue
         if re.search(REJECT_BTN, text):
@@ -275,7 +312,9 @@ def check_forced_consent(elements: list[PageElement]) -> list[Finding]:
                                      "Reject is a small link while Accept is a prominent button."))
 
     for el in elements:
-        if el.kind in ("text", "banner") and re.search(IMPLIED_CONSENT, normalize(el.text)):
+        text = normalize(el.text)
+        # Only consent to cookies / tracking; "by continuing you agree to our terms" is a ToS notice.
+        if el.kind in ("text", "banner") and re.search(IMPLIED_CONSENT, text) and re.search(COOKIE_CONTEXT, text):
             findings.append(_finding(PatternType.FORCED_CONSENT, 0.7, el,
                                      "Implied consent: just using the site is treated as agreement."))
             break

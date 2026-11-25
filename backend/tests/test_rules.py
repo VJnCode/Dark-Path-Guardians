@@ -42,6 +42,23 @@ def test_static_time_is_not_timer():
     assert rules.check_urgency(el(kind="timer", text="10:30", changing=False)) == []
 
 
+@pytest.mark.parametrize("text", [
+    "Your cart is reserved for 09:57 minutes!", "00Days17Hours12Mins13Secs", "Order within 0:02:41",
+    "Time remaining: 04:50", "60% OFF ENDS IN DAYS HOURS MINUTES SECONDS",
+])
+def test_countdown_text(text):
+    assert PT.FAKE_URGENCY in types(rules.check_urgency(el(text=text)), 0.8)
+
+
+def test_hurry_with_stock_claim_is_scarcity_only():
+    f = rules.run_rules([el(text="Hurry! Only 2 left in stock")])
+    assert types(f) == {PT.FAKE_SCARCITY}
+
+
+def test_hurry_alone_is_urgency():
+    assert PT.FAKE_URGENCY in types(rules.check_urgency(el(text="Hurry, act now!")), 0.8)
+
+
 # ---------------------------------------------------------------- scarcity
 
 @pytest.mark.parametrize("text", [
@@ -52,7 +69,14 @@ def test_scarcity_positive(text):
     assert PT.FAKE_SCARCITY in types(rules.check_scarcity(el(text=text)), 0.8)
 
 
-@pytest.mark.parametrize("text", ["In stock", "Ships in 2 days", "2 left turns then straight"])
+@pytest.mark.parametrize("text", ["1 LEFT", "20 units left", "74% offers claimed. Hurry up!",
+                                  "Only 5 pcs left!", "Less than 10 left!"])
+def test_scarcity_loose_phrasing(text):
+    assert PT.FAKE_SCARCITY in types(rules.check_scarcity(el(text=text)), 0.8)
+
+
+@pytest.mark.parametrize("text", ["In stock", "Ships in 2 days", "2 left turns then straight",
+                                  "Movies on demand", "Characters remaining: 200"])
 def test_scarcity_negative(text):
     assert rules.check_scarcity(el(text=text)) == []
 
@@ -166,6 +190,32 @@ def test_reject_hidden_as_link_is_ambiguous():
 def test_implied_consent_text():
     f = rules.check_forced_consent([el(text="By continuing to browse this site you agree to our use of cookies.")])
     assert f and f[0].pattern_type == PT.FORCED_CONSENT
+
+
+def test_banner_buttons_far_from_banner_text():
+    page = [el(kind="banner", text="This site uses cookies and related technologies for analytics and ads."),
+            el(kind="button", text="Manage Settings", near_text="Manage Settings Agree"),
+            el(kind="button", text="Agree", near_text="Manage Settings Agree", selector="#agree")]
+    f = rules.check_forced_consent(page)
+    assert f and f[0].element_selector == "#agree"
+
+
+def test_strict_labels_need_a_cookie_notice():
+    assert rules.check_forced_consent([el(kind="button", text="Agree", near_text="Rate this article")]) == []
+
+
+def test_terms_notice_is_not_cookie_consent():
+    assert rules.check_forced_consent([el(text="By continuing past this page, you agree to our terms of use")]) == []
+
+
+def test_link_starting_with_consent_is_not_a_button():
+    page = [el(kind="link", text="Consent interfaces", near_text="Patterns: cookies and consent")]
+    assert rules.check_forced_consent(page) == []
+
+
+def test_privacy_footer_is_not_consent_ui():
+    page = [el(kind="button", text="Continue", near_text="Terms of Use | Privacy Policy | Sitemap")]
+    assert rules.check_forced_consent(page) == []
 
 
 def test_accept_outside_consent_ui_ignored():

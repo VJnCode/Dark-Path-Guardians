@@ -57,13 +57,15 @@
     return null;
   }
 
-  // Text of the nearest container that is not too large, used as context.
+  // Text of the nearest container that says noticeably more than the element itself.
+  // (A button row like "Manage Settings Agree" is too small; the banner around it is what we want.)
   function nearText(el) {
     const consent = consentContainer(el);
     if (consent) return cut(consent.innerText, 600);
-    for (let n = el.parentElement, depth = 0; n && n !== document.body && depth < 5; n = n.parentElement, depth++) {
+    const own = clean(el.innerText || el.value || "").length;
+    for (let n = el.parentElement, depth = 0; n && n !== document.body && depth < 6; n = n.parentElement, depth++) {
       const t = clean(n.innerText);
-      if (t.length > clean(el.innerText).length + 10) return cut(t, 400);
+      if (t.length > own + 60) return cut(t, 400);
     }
     return "";
   }
@@ -88,6 +90,7 @@
     const seen = new Set();
     const add = (el, item) => {
       const selector = selectorFor(el);
+      if (selector.length > 1000) return; // the API rejects longer selectors
       const key = selector + "|" + item.kind;
       if (seen.has(key)) return;
       seen.add(key);
@@ -110,7 +113,7 @@
       const text = cut(el.innerText || el.value || el.getAttribute("aria-label") || "", 150);
       if (!text) continue;
       add(el, { kind: el.tagName === "A" && el.getAttribute("role") !== "button" ? "link" : "button",
-                text, near_text: nearText(el), href: el.href || "", ad_hint: adHint(el) });
+                text, near_text: nearText(el), href: (el.href || "").slice(0, 500), ad_hint: adHint(el) });
     }
 
     // 3. Text blocks, prices, timer candidates and consent banners.
@@ -208,6 +211,10 @@
     el.scrollIntoView({ behavior: "smooth", block: "center" });
     return true;
   }
+
+  // Also used outside the extension (eval capture, sandbox runner) via Playwright.
+  window.__dpgExtract = extract;
+  if (!globalThis.chrome?.runtime?.onMessage) return;
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.action === "extract") {

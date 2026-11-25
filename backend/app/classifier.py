@@ -45,11 +45,10 @@ def classify(elements: list[PageElement], mode: Mode = "hybrid") -> tuple[list[F
         return _sorted(rule_findings), False, error
 
     # Pick what the LLM should look at.
-    if mode == "llm":
+    if mode == "llm":  # LLM-only baseline: the model sees every element, no rules
         accepted: list[Finding] = []
         ambiguous: list[Finding] = []
-        flagged = {f.element_selector for f in rule_findings}
-        candidates = [el for el in elements if el.selector in flagged or _is_cue(el)]
+        candidates = list(elements)
     else:  # hybrid
         accepted = [f for f in rule_findings if f.confidence >= ACCEPT_THRESHOLD]
         ambiguous = [f for f in rule_findings if f.confidence < ACCEPT_THRESHOLD]
@@ -68,8 +67,7 @@ def classify(elements: list[PageElement], mode: Mode = "hybrid") -> tuple[list[F
         labels = llm.classify(candidates)
     except llm.LLMError as e:
         # Fall back to rules: keep the ambiguous findings as they are.
-        fallback = rule_findings if mode == "llm" else accepted + ambiguous
-        return _sorted(fallback), False, str(e)
+        return _sorted(rule_findings), False, str(e)
 
     findings = list(accepted)
     ambiguous_by_sel: dict[str, list[Finding]] = {}

@@ -72,14 +72,42 @@ def _item(i: int, el: PageElement) -> dict:
     return item
 
 
+# Constrains decoding to exactly our output shape. Plain JSON mode isn't enough: small models
+# sometimes echo the input JSON back instead of answering.
+RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "results": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": "integer"},
+                    "label": {"type": "string", "enum": _LABELS},
+                    "confidence": {"type": "number"},
+                    "explanation": {"type": "string"},
+                },
+                "required": ["id", "label", "confidence", "explanation"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["results"],
+    "additionalProperties": False,
+}
+
+
 def _call(items: list[dict]) -> list[LLMLabel]:
+    prompt = (f"Classify each of these {len(items)} items. Return one result per id.\n\n"
+              + json.dumps(items, ensure_ascii=False))
     body = {
         "model": settings.llm_model,
         "temperature": 0,
-        "response_format": {"type": "json_object"},
+        "response_format": {"type": "json_schema",
+                            "json_schema": {"name": "labels", "strict": True, "schema": RESPONSE_SCHEMA}},
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps({"items": items}, ensure_ascii=False)},
+            {"role": "user", "content": prompt},
         ],
     }
     if settings.llm_no_think:
