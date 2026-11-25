@@ -114,7 +114,8 @@ def test_fee_line_positive(text):
     assert PT.HIDDEN_FEES in types(rules.check_fee_line(el(kind="price", text=text)))
 
 
-@pytest.mark.parametrize("text", ["$19.99", "Free shipping on orders over $50", "Fee-free returns"])
+@pytest.mark.parametrize("text", ["$19.99", "Free shipping on orders over $50", "Fee-free returns",
+                                  "Sell with 0% transaction fees", "No booking fees, ever", "Service fee waived"])
 def test_fee_line_negative(text):
     assert rules.check_fee_line(el(kind="price", text=text)) == []
 

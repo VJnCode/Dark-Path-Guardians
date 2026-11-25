@@ -65,6 +65,31 @@ class ThreatReport(BaseModel):
     signals: list[ThreatSignal]
 
 
+class Verdict(BaseModel):
+    level: Literal["safe", "suspicious", "block"]
+    score: int = Field(ge=0, le=100)
+    reasons: list[str]
+    features: dict = Field(default_factory=dict)
+
+
+class SandboxRequest(BaseModel):
+    url: str = Field(max_length=2000)
+
+
+class SandboxSession(BaseModel):
+    id: str
+    token: str
+    url: str
+    status: Literal["starting", "analyzing", "ready", "error", "ended"]
+    expires_at: float
+    verdict: Optional[Verdict] = None
+    findings: list["Finding"] = Field(default_factory=list)
+    final_url: Optional[str] = None
+    events: list[dict] = Field(default_factory=list)
+    error: Optional[str] = None
+    view_url: Optional[str] = None  # relative to the API; set once the verdict is ready
+
+
 class AnalyzeResponse(BaseModel):
     url: str
     risk_score: int = Field(ge=0, le=100)

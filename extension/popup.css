@@ -67,5 +67,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .pill.warn { background: var(--medium); color: #000; }
 .pill.ok { background: var(--low); color: #fff; }
 
-footer { padding: 12px 14px; }
-#sandbox { width: 100%; padding: 8px; background: var(--brand); color: #fff; border-color: var(--brand); }
+footer { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.sandbox-row { display: flex; gap: 6px; }
+#sandbox-url {
+  flex: 1; min-width: 0; font: inherit; padding: 5px 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: transparent; color: var(--fg);
+}
+#sandbox { padding: 6px 10px; background: var(--brand); color: #fff; border-color: var(--brand); white-space: nowrap; }

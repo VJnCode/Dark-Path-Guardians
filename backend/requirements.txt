@@ -4,3 +4,4 @@ httpx==0.28.1
 pydantic==2.14.4
 python-whois==0.9.6
 tldextract==5.4.0
+docker==7.2.0

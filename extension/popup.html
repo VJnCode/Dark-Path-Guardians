@@ -40,9 +40,11 @@
   </section>
 
   <footer>
-    <button id="sandbox" type="button" disabled title="Available in the sandbox phase">
-      Open in secure sandbox
-    </button>
+    <label for="sandbox-url" class="muted">Suspicious link? Open it in a disposable browser.</label>
+    <div class="sandbox-row">
+      <input id="sandbox-url" type="url" placeholder="https://…" spellcheck="false">
+      <button id="sandbox" type="button">Open in secure sandbox</button>
+    </div>
   </footer>
   <script src="popup.js"></script>
 </body>

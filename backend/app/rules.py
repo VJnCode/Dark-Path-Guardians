@@ -183,8 +183,14 @@ def parse_amount(text: str) -> Optional[float]:
         return None
 
 
+NO_FEE = (r"(\b0%|\$0(\.00)?\b|\b(zero|no|free of|without|waived?)\b).{0,25}\b(fees?|charges?|surcharge)\b"
+          r"|\bfees? waived\b")
+
+
 def check_fee_line(el: PageElement) -> list[Finding]:
     text = normalize(el.text)
+    if re.search(NO_FEE, text):
+        return []  # "0% transaction fees", "no booking fee"
     m = re.search(FEE_LINE, text)
     if m:
         conf = 0.7 if (el.kind == "price" or parse_amount(text) is not None) else 0.5

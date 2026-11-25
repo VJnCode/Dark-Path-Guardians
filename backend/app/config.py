@@ -23,6 +23,17 @@ class Settings:
     safe_browsing_api_key: str = os.getenv("SAFE_BROWSING_API_KEY", "")
     threat_timeout_s: float = float(os.getenv("THREAT_TIMEOUT_S", "6"))
 
+    # Sandbox sessions
+    sandbox_enabled: bool = _bool("SANDBOX_ENABLED", True)
+    sandbox_image: str = os.getenv("SANDBOX_IMAGE", "dpg-sandbox:latest")
+    sandbox_network: str = os.getenv("SANDBOX_NETWORK", "dpg_sandbox")
+    sandbox_proxy_url: str = os.getenv("SANDBOX_PROXY_URL", "http://proxy:3128")
+    sandbox_session_seconds: int = int(os.getenv("SANDBOX_SESSION_SECONDS", "300"))
+    sandbox_max_sessions: int = int(os.getenv("SANDBOX_MAX_SESSIONS", "3"))
+    sandbox_report_timeout_s: int = int(os.getenv("SANDBOX_REPORT_TIMEOUT_S", "90"))
+    sandbox_memory: str = os.getenv("SANDBOX_MEMORY", "1g")
+    sandbox_cpus: float = float(os.getenv("SANDBOX_CPUS", "1.0"))
+
     # CORS: only our extension needs to call the API.
     cors_origin_regex: str = os.getenv("CORS_ORIGIN_REGEX", r"chrome-extension://.*")
 

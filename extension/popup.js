@@ -100,7 +100,8 @@ async function scan(force = false) {
       if (cached && cached.url === tab.url) return render(cached.result);
     }
     const reply = await chrome.runtime.sendMessage({ action: "analyze", tabId: tab.id, url: tab.url });
-    if (reply?.error) throw new Error(reply.error);
+    if (!reply) throw new Error("No response from the extension's background worker. Try reopening the popup.");
+    if (reply.error) throw new Error(reply.error);
     render(reply.result);
   } catch (e) {
     const msg = String(e.message || e);
@@ -118,5 +119,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   $("page-url").textContent = tab?.url ? new URL(tab.url).hostname : "";
   $("rescan").addEventListener("click", () => scan(true));
+  if (/^https?:/.test(tab?.url || "")) $("sandbox-url").value = tab.url;
+  $("sandbox").addEventListener("click", () => {
+    const url = $("sandbox-url").value.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      $("sandbox-url").focus();
+      return;
+    }
+    chrome.tabs.create({ url: chrome.runtime.getURL(`sandbox.html?url=${encodeURIComponent(url)}`) });
+  });
   if (tab) scan();
 });

@@ -12,7 +12,7 @@ async function analyze(tabId, url) {
 
   const res = await fetch(`${await backendUrl()}/analyze`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-DPG-Client": "extension" },
     body: JSON.stringify({ url, elements, mode: "hybrid", include_threat: true }),
   });
   if (!res.ok) throw new Error(`Backend returned ${res.status}`);
@@ -40,3 +40,17 @@ chrome.tabs.onUpdated.addListener((tabId, info) => {
   if (info.status === "loading") chrome.storage.session.remove(`result:${tabId}`);
 });
 chrome.tabs.onRemoved.addListener((tabId) => chrome.storage.session.remove(`result:${tabId}`));
+
+// ------------------------------------------------------------ sandbox
+
+function openSandbox(url) {
+  chrome.tabs.create({ url: chrome.runtime.getURL(`sandbox.html?url=${encodeURIComponent(url)}`) });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({ id: "dpg-sandbox", title: "Open link in secure sandbox", contexts: ["link"] });
+});
+
+chrome.contextMenus.onClicked.addListener((info) => {
+  if (info.menuItemId === "dpg-sandbox" && info.linkUrl) openSandbox(info.linkUrl);
+});

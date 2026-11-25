@@ -97,6 +97,22 @@ def _sorted(findings: list[Finding]) -> list[Finding]:
     return sorted(findings, key=lambda f: f.confidence, reverse=True)
 
 
+def drop_containers(findings: list[Finding], elements: list[PageElement]) -> list[Finding]:
+    """Report each pattern once: drop a finding whose element text contains the text of another
+    finding of the same type (an outer container of an element we already flagged)."""
+    text = {}
+    for el in elements:
+        text.setdefault(el.selector, normalize(el.label or el.text))
+    kept: list[Finding] = []
+    for f in sorted(findings, key=lambda f: (len(text.get(f.element_selector, "")), -f.confidence)):
+        t = text.get(f.element_selector, "")
+        dup = any(k.pattern_type == f.pattern_type and text.get(k.element_selector, "") and
+                  text[k.element_selector] in t for k in kept)
+        if not dup:
+            kept.append(f)
+    return _sorted(kept)
+
+
 # ---------------------------------------------------------------- risk score
 
 # How much each pattern type can add to the 0-100 score (at confidence 1.0).

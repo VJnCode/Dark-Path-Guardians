@@ -7,6 +7,9 @@ from app.main import app
 from app.schemas import PageElement, PatternType as PT, ThreatReport, ThreatSignal
 
 
+HDR = {"X-DPG-Client": "test"}
+
+
 def el(selector, kind="text", text="", **kw):
     return PageElement(selector=selector, kind=kind, text=text, **kw)
 
@@ -87,7 +90,7 @@ def test_api_analyze_rules_mode():
     client = TestClient(app)
     body = {"url": "https://shop.example/item", "mode": "rules", "include_threat": False,
             "elements": [{"selector": "#s", "kind": "text", "text": "Only 1 left in stock"}]}
-    r = client.post("/analyze", json=body)
+    r = client.post("/analyze", json=body, headers=HDR)
     assert r.status_code == 200
     data = r.json()
     assert data["findings"][0]["pattern_type"] == PT.FAKE_SCARCITY.value
@@ -96,5 +99,21 @@ def test_api_analyze_rules_mode():
 
 
 def test_api_threat_rejects_internal_url():
-    r = TestClient(app).post("/threat", json={"url": "http://169.254.169.254/"})
+    r = TestClient(app).post("/threat", json={"url": "http://169.254.169.254/"}, headers=HDR)
     assert r.status_code == 400
+
+
+def test_api_requires_client_header():
+    r = TestClient(app).post("/analyze", json={"url": "https://x.example/", "elements": []})
+    assert r.status_code == 403
+
+
+def test_drop_containers_keeps_innermost():
+    els = [el("#outer", text="Deluxe room. Only 2 rooms left at this price! Book now"),
+           el("#inner", text="Only 2 rooms left at this price!"),
+           el("#other", text="Hurry, offer ends tonight")]
+    findings, _, _ = classifier.classify(els, "rules")
+    kept = classifier.drop_containers(findings, els)
+    sel = {(f.element_selector, f.pattern_type.value) for f in kept}
+    assert ("#inner", "fake_scarcity") in sel and ("#outer", "fake_scarcity") not in sel
+    assert ("#other", "fake_urgency") in sel
