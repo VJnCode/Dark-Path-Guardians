@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+  <title>Dark-Path Guardians</title>
+</head>
+<body>
+  <header>
+    <img src="icons/detective.png" alt="" class="logo">
+    <div>
+      <h1>Dark-Path Guardians</h1>
+      <p id="page-url" class="muted"></p>
+    </div>
+  </header>
+
+  <section class="score-row">
+    <div class="gauge" id="gauge" aria-label="Page risk score">
+      <svg viewBox="0 0 36 36" aria-hidden="true">
+        <circle class="track" cx="18" cy="18" r="15.9"></circle>
+        <circle class="fill" id="gauge-fill" cx="18" cy="18" r="15.9" stroke-dasharray="0 100"></circle>
+      </svg>
+      <span id="score">–</span>
+    </div>
+    <div class="score-text">
+      <p id="verdict" class="verdict">Scanning…</p>
+      <p id="status" class="muted"></p>
+      <button id="rescan" type="button">Rescan</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Dark patterns <span id="finding-count" class="count"></span></h2>
+    <ul id="findings" class="list"></ul>
+  </section>
+
+  <section>
+    <h2>Threat signals</h2>
+    <ul id="signals" class="list"></ul>
+  </section>
+
+  <footer>
+    <button id="sandbox" type="button" disabled title="Available in the sandbox phase">
+      Open in secure sandbox
+    </button>
+  </footer>
+  <script src="popup.js"></script>
+</body>
+</html>

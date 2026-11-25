@@ -1,0 +1,32 @@
+services:
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      LLM_BASE_URL: http://ollama:11434/v1
+    ports:
+      - "127.0.0.1:8000:8000"   # localhost only: never expose the API to the LAN
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    # No published port: only the backend talks to it.
+
+  # One-shot job that downloads the model on first start (cached in the volume).
+  ollama-pull:
+    image: ollama/ollama:latest
+    env_file: .env
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "sleep 3 && ollama pull \"$${LLM_MODEL:-qwen3:4b}\""]
+    depends_on:
+      - ollama
+    restart: "no"
+
+volumes:
+  ollama_data:
