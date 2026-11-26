@@ -6,3 +6,4 @@ __pycache__/
 # Mathur et al. data is GPL-3.0: downloaded by eval/build_dataset.py, not redistributed here
 eval/data/raw/
 eval/data/text_dataset.jsonl
+dist/

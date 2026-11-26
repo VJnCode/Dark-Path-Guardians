@@ -127,8 +127,10 @@ docker compose up --build -d    # first run builds the sandbox image and pulls t
 curl http://127.0.0.1:8000/health
 ```
 
-Load the extension: `chrome://extensions` → enable **Developer mode** → **Load unpacked** → select
-`extension/`. Open a shopping page and click the toolbar icon. To try the sandbox, use the popup's
+Build the extension: `python scripts/build_extension.py`. It checks the manifest and writes
+`dist/dark-path-guardians/` (to load) and `dist/dark-path-guardians-<version>.zip` (for the Chrome Web
+Store or Edge Add-ons). Load it: `chrome://extensions` → enable **Developer mode** → **Load unpacked** →
+select `dist/dark-path-guardians/` (or `extension/` directly while developing). Open a shopping page and click the toolbar icon. To try the sandbox, use the popup's
 **Open in secure sandbox** button, or right-click any link → **Open link in secure sandbox**.
 
 ### Configuration (`.env`)
@@ -251,6 +253,7 @@ session containers it didn't create.
 backend/app/      FastAPI app: rules, llm, classifier (hybrid + score), threat, sandbox, verdict
 backend/tests/    unit tests + sandbox integration test
 extension/        MV3 extension: content script, service worker, popup, sandbox page
+scripts/          build_extension.py: package the extension into dist/
 sandbox/          session image: Dockerfile, runner, Chromium policy, Squid config
 eval/             dataset builder, page capture, review helper, evaluator, results
 ```
