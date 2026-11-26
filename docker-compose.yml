@@ -1,0 +1,74 @@
+services:
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      LLM_BASE_URL: http://ollama:11434/v1
+      DOCKER_HOST: tcp://docker-proxy:2375      # filtered Docker API, not the raw socket
+      SANDBOX_NETWORK: dpg_sandbox
+      SANDBOX_PROXY_URL: http://proxy:3128
+    ports:
+      - "127.0.0.1:8000:8000"   # localhost only: never expose the API to the LAN
+    networks: [default, sandbox, docker_api]
+    depends_on: [ollama, docker-proxy, proxy, sandbox-image]
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    environment:
+      OLLAMA_KEEP_ALIVE: 30m   # loading the model on CPU takes ~1 min; keep it warm between scans
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    # No published port: only the backend talks to it.
+
+  # One-shot job that downloads the model on first start (cached in the volume).
+  ollama-pull:
+    image: ollama/ollama:latest
+    env_file: .env
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "sleep 3 && ollama pull \"$${LLM_MODEL:-qwen3:4b}\""]
+    depends_on:
+      - ollama
+    restart: "no"
+
+  # Only container endpoints of the Docker API are reachable (create/start/logs/remove).
+  # Still a privileged component: see "Limitations" in the README.
+  docker-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    environment:
+      CONTAINERS: 1
+      POST: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [docker_api]
+    restart: unless-stopped
+
+  # The only way out of the sandbox network. Refuses private/internal addresses and non-web ports.
+  proxy:
+    image: ubuntu/squid:latest
+    volumes:
+      - ./sandbox/squid.conf:/etc/squid/squid.conf:ro
+    networks: [default, sandbox]
+    restart: unless-stopped
+
+  # Builds the sandbox session image; the container itself just exits.
+  sandbox-image:
+    build:
+      context: .
+      dockerfile: sandbox/Dockerfile
+    image: dpg-sandbox:latest
+    entrypoint: ["true"]
+    network_mode: none
+    restart: "no"
+
+networks:
+  sandbox:
+    name: dpg_sandbox
+    internal: true      # no route to the internet or the host; only the proxy bridges out
+  docker_api:
+    internal: true
+
+volumes:
+  ollama_data:

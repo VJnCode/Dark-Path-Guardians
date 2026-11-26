@@ -1,0 +1,14 @@
+{
+  "DownloadRestrictions": 3,
+  "PasswordManagerEnabled": false,
+  "AutofillAddressEnabled": false,
+  "AutofillCreditCardEnabled": false,
+  "BrowserSignin": 0,
+  "SyncDisabled": true,
+  "PromptForDownloadLocation": false,
+  "WebRtcIPHandling": "disable_non_proxied_udp",
+  "DefaultNotificationsSetting": 2,
+  "DefaultGeolocationSetting": 2,
+  "AudioCaptureAllowed": false,
+  "VideoCaptureAllowed": false
+}

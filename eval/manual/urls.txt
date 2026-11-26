@@ -1,0 +1,67 @@
+# Candidate pages for the manual set. One URL per line, optional " # note".
+# A mix of retail, travel, subscription, media and "control" pages expected to be clean.
+# Live pages change: the labels describe the captured snapshot, not the site in general.
+# Sites that served a bot wall to the headless capture were removed rather than worked around.
+
+# --- retail
+https://www.amazon.com/ # retail homepage
+https://www.amazon.com/gp/goldbox # deals page
+https://www.amazon.in/ # retail homepage (India)
+https://www.walmart.com/ # retail homepage
+https://www.target.com/ # retail homepage
+https://www.newegg.com/ # electronics retail
+https://www.aliexpress.com/ # marketplace with flash deals
+https://www.nike.com/ # sportswear
+https://www.flipkart.com/ # Indian marketplace
+https://www.wish.com/ # marketplace
+https://www.fashionnova.com/ # fashion retail
+https://www.fashionnova.com/collections/sale # sale page
+https://www.dell.com/en-us/shop/deals # electronics deals
+https://www.lenovo.com/us/en/d/deals/ # electronics deals
+
+# --- travel & tickets
+https://www.booking.com/ # hotel booking
+https://www.agoda.com/ # hotel booking
+https://www.ryanair.com/gb/en # airline
+https://www.ticketmaster.com/ # event tickets
+https://www.ticketmaster.com/discover/concerts # event listings
+
+# --- subscriptions & services
+https://www.namecheap.com/ # domains
+https://www.hostinger.com/ # hosting with countdown deals
+https://www.hostinger.com/web-hosting # hosting pricing
+https://www.bluehost.com/ # hosting
+https://www.hostgator.com/ # hosting
+https://nordvpn.com/pricing/ # VPN pricing page
+https://surfshark.com/pricing # VPN pricing page
+https://www.expressvpn.com/order # VPN checkout
+https://www.grammarly.com/premium # subscription upsell
+https://www.spotify.com/us/premium/ # subscription page
+https://www.udemy.com/ # courses, frequent timed sales
+https://www.canva.com/pricing/ # subscription pricing
+https://www.dropbox.com/plans # subscription pricing
+
+# --- media (consent banners, native ads)
+https://www.theguardian.com/international # consent prompt
+https://www.bbc.com/news # news
+https://www.independent.co.uk/ # news with ads
+https://www.spiegel.de/international/ # EU consent wall
+https://www.lemonde.fr/en/ # EU consent prompt
+https://www.cnn.com/ # news
+
+# --- controls (expected clean)
+https://en.wikipedia.org/wiki/Dark_pattern # encyclopedia
+https://www.gov.uk/ # government
+https://www.python.org/ # open-source project
+https://www.mozilla.org/en-US/ # non-profit
+https://www.craigslist.org/about/sites # classifieds
+https://news.ycombinator.com/ # forum
+https://www.gnu.org/ # non-profit
+https://docs.python.org/3/ # documentation
+https://www.rust-lang.org/ # open-source project
+
+# --- extra retail
+https://www.costco.com/ # warehouse retail
+https://www.homedepot.com/ # home improvement retail
+https://www.samsung.com/us/ # electronics retail
+https://www.ikea.com/us/en/ # furniture retail
