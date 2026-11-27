@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="sandbox.css">
+  <title>Secure sandbox · Dark-Path Guardians</title>
+</head>
+<body>
+  <main>
+    <header>
+      <img src="icons/detective.png" alt="" class="logo">
+      <div>
+        <h1>Secure sandbox</h1>
+        <p id="target" class="muted url"></p>
+      </div>
+    </header>
+
+    <section id="progress" class="card">
+      <ol class="steps">
+        <li id="step-start">Starting a disposable browser</li>
+        <li id="step-load">Loading the page inside the sandbox</li>
+        <li id="step-analyze">Checking for dark patterns and threats</li>
+      </ol>
+      <p id="progress-note" class="muted">Nothing from the page reaches your browser until you choose to view it.</p>
+    </section>
+
+    <section id="result" class="card" hidden>
+      <div class="verdict-row">
+        <span id="verdict" class="verdict"></span>
+        <span id="score" class="muted"></span>
+      </div>
+      <p id="final-url" class="muted url"></p>
+      <h2>Why</h2>
+      <ul id="reasons"></ul>
+      <details id="network-details">
+        <summary>What the sandbox saw</summary>
+        <dl id="features"></dl>
+      </details>
+      <div id="override" hidden>
+        <label><input type="checkbox" id="override-check"> I understand this page looks dangerous and still want to view it inside the sandbox.</label>
+      </div>
+      <div class="actions">
+        <button id="open" type="button">View page in sandbox</button>
+        <button id="end" type="button" class="secondary">End session</button>
+        <span id="countdown" class="muted"></span>
+      </div>
+      <p class="muted small">The page runs in a throwaway container: no access to your files, cookies or network, downloads blocked. It is destroyed when the session ends.</p>
+    </section>
+
+    <section id="events-card" class="card" hidden>
+      <h2>Live activity</h2>
+      <ul id="events" class="muted"></ul>
+    </section>
+
+    <section id="error" class="card error" hidden></section>
+  </main>
+  <script src="sandbox.js"></script>
+</body>
+</html>
